@@ -4,10 +4,11 @@ A minimal email aggregation service with only essential endpoints.
 
 ## Features
 
-- **Single email account** - Connect to one Gmail account
+- **Single email account** - Connect to any IMAP provider (Gmail, Outlook, Yahoo, etc.)
 - **Real-time listening** - IMAP IDLE for new emails
 - **Unread emails only** - Only processes unread emails from last 5 minutes
 - **Simple 2FA extraction** - Basic pattern matching with auto-read marking
+- **Single-use codes** - Codes are consumed after retrieval (returned only once)
 - **Auto cleanup** - Marks emails as read after extracting 2FA codes
 - **Sender filtering** - Get codes from specific email addresses
 - **Database cleanup** - Automatically removes old emails (7+ days)
@@ -23,7 +24,7 @@ A minimal email aggregation service with only essential endpoints.
 2. **Configure email**
    ```bash
    cp .env.example .env
-   # Edit .env with your Gmail credentials
+   # Edit .env with your email provider credentials
    ```
 
 3. **Start service**
@@ -41,14 +42,14 @@ curl "http://localhost:3001/api/last-email"
 ```
 
 ### GET /api/last-code
-Get the most recent 2FA code (from unread emails in last 5 minutes).
+Get the most recent unused 2FA code (from unread emails in last 5 minutes). **Single-use**: code is marked as used after retrieval.
 
 ```bash
 curl "http://localhost:3001/api/last-code"
 ```
 
 ### GET /api/last-code-from/:fromAddress
-Get the most recent 2FA code from a specific sender.
+Get the most recent unused 2FA code from a specific sender. **Single-use**: code is marked as used after retrieval.
 
 ```bash
 curl "http://localhost:3001/api/last-code-from/noreply@github.com"
@@ -63,12 +64,32 @@ curl "http://localhost:3001/api/status"
 
 ## Configuration
 
-Edit `.env` file:
+Edit `.env` file with your email provider settings:
+
+**Gmail:**
 ```env
 EMAIL=your-email@gmail.com
 PASSWORD=your-16-char-app-password
 HOST=imap.gmail.com
-PORT=993
+PORT_IMAP=993
+TLS=true
+```
+
+**Outlook/Hotmail:**
+```env
+EMAIL=your-email@outlook.com
+PASSWORD=your-password
+HOST=outlook.office365.com
+PORT_IMAP=993
+TLS=true
+```
+
+**Yahoo:**
+```env
+EMAIL=your-email@yahoo.com
+PASSWORD=your-app-password
+HOST=imap.mail.yahoo.com
+PORT_IMAP=993
 TLS=true
 ```
 

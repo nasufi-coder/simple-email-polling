@@ -39,13 +39,22 @@ class SimpleDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email_id TEXT NOT NULL,
         code TEXT NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (email_id) REFERENCES emails (id)
       )
     `;
+    
+    // Add 'used' column to existing tables (migration)
+    const addUsedColumn = `ALTER TABLE codes ADD COLUMN used BOOLEAN DEFAULT FALSE`;
 
     this.db.exec(createEmailsTable);
     this.db.exec(createCodesTable);
+    
+    // Try to add used column (for existing databases)
+    this.db.run(addUsedColumn, (err) => {
+      // Ignore error if column already exists
+    });
   }
 
   insertEmail(email) {
@@ -87,14 +96,21 @@ class SimpleDatabase {
         SELECT c.*, e.subject, e.from_address 
         FROM codes c 
         JOIN emails e ON c.email_id = e.id 
-        WHERE e.email_account = ? 
+        WHERE e.email_account = ? AND c.used = FALSE
         ORDER BY c.created_at DESC 
         LIMIT 1
       `;
       
       this.db.get(sql, [emailAccount], (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
+        if (err) {
+          reject(err);
+        } else if (row) {
+          // Mark code as used
+          this.markCodeAsUsed(row.id);
+          resolve(row);
+        } else {
+          resolve(null);
+        }
       });
     });
   }
@@ -105,15 +121,31 @@ class SimpleDatabase {
         SELECT c.*, e.subject, e.from_address 
         FROM codes c 
         JOIN emails e ON c.email_id = e.id 
-        WHERE e.email_account = ? AND e.from_address = ? 
+        WHERE e.email_account = ? AND e.from_address = ? AND c.used = FALSE
         ORDER BY c.created_at DESC 
         LIMIT 1
       `;
       
       this.db.get(sql, [emailAccount, fromAddress], (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
+        if (err) {
+          reject(err);
+        } else if (row) {
+          // Mark code as used
+          this.markCodeAsUsed(row.id);
+          resolve(row);
+        } else {
+          resolve(null);
+        }
       });
+    });
+  }
+
+  markCodeAsUsed(codeId) {
+    const sql = `UPDATE codes SET used = TRUE WHERE id = ?`;
+    this.db.run(sql, [codeId], (err) => {
+      if (err) {
+        console.error('Error marking code as used:', err);
+      }
     });
   }
 
