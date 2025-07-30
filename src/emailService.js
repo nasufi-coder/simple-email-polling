@@ -57,6 +57,9 @@ class SimpleEmailService {
       this.imap.on('mail', () => {
         this.fetchLatestEmail();
       });
+
+      // Keep connection alive with periodic heartbeat
+      this.startHeartbeat();
     });
   }
 
@@ -155,6 +158,23 @@ class SimpleEmailService {
         console.log(`Email ${uid} marked as read`);
       }
     });
+  }
+
+  startHeartbeat() {
+    // Send NOOP command every 5 minutes to keep connection alive
+    this.heartbeatInterval = setInterval(() => {
+      if (this.isConnected && this.imap) {
+        this.imap.serverSupports('IDLE') ? 
+          console.log('Connection alive (IDLE active)') :
+          this.imap.noop((err) => {
+            if (err) {
+              console.error('Heartbeat failed:', err);
+            } else {
+              console.log('Heartbeat sent');
+            }
+          });
+      }
+    }, 5 * 60 * 1000); // 5 minutes
   }
 
   getStatus() {
