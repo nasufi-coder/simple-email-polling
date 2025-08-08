@@ -11,8 +11,9 @@ A minimal email aggregation service with only essential endpoints.
 - **Single-use codes** - Codes are consumed after retrieval (returned only once)
 - **Auto cleanup** - Marks emails as read after extracting 2FA codes
 - **Sender filtering** - Get codes from specific email addresses
+- **Recipient filtering** - Get codes by "to" address (for forwarded emails)
 - **Database cleanup** - Automatically removes old emails (7+ days)
-- **4 simple endpoints** - No email parameter needed (uses configured account)
+- **5 simple endpoints** - No email parameter needed (uses configured account)
 
 ## Quick Start
 
@@ -53,6 +54,26 @@ Get the most recent unused 2FA code from a specific sender. **Single-use**: code
 
 ```bash
 curl "http://localhost:3001/api/last-code-from/noreply@github.com"
+```
+
+### GET /api/last-code-to/:toAddress
+Get the most recent unused 2FA code sent to a specific recipient address (designed for forwarded emails). The system extracts "To:" addresses from email body text only. **Single-use**: code is marked as used after retrieval.
+
+**Example forwarded email format:**
+```
+From: Service Name <noreply@service.com>
+To: user@example.com <user@example.com>
+Subject: OTP Verification
+
+OTP: 123456
+```
+
+**Supported body text patterns:**
+- `To: user@example.com <user@example.com>`
+- `To: user@example.com`
+
+```bash
+curl "http://localhost:3001/api/last-code-to/user@example.com"
 ```
 
 ### GET /api/status

@@ -132,14 +132,18 @@ class SimpleEmailService {
   async processEmail(rawEmail, uid) {
     try {
       const parsed = await simpleParser(rawEmail);
+      const bodyText = parsed.text || '';
+      
+      // Extract "To" address from body text only (for forwarded emails)
+      const toAddress = this.extractToAddressFromBody(bodyText);
       
       const email = {
         id: uuidv4(),
         emailAccount: this.config.email,
         subject: parsed.subject || '',
         fromAddress: parsed.from?.value?.[0]?.address || '',
-        toAddress: parsed.to?.value?.[0]?.address || '',
-        bodyText: parsed.text || '',
+        toAddress: toAddress,
+        bodyText: bodyText,
         date: parsed.date?.toISOString() || new Date().toISOString(),
         uid: uid
       };
@@ -152,6 +156,25 @@ class SimpleEmailService {
     } catch (error) {
       console.error('Error processing email:', error);
     }
+  }
+
+  extractToAddressFromBody(bodyText) {
+    // Pattern to match "To: email@domain.com" or "To: name <email@domain.com>"
+    const patterns = [
+      /To:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i,
+      /To:\s*[^<]*<([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>/i,
+      /To:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\s*</i
+    ];
+    
+    for (const pattern of patterns) {
+      const match = bodyText.match(pattern);
+      if (match && match[1]) {
+        console.log(`Extracted To address from body: ${match[1]}`);
+        return match[1];
+      }
+    }
+    
+    return '';
   }
 
   extractCode(email, uid) {
