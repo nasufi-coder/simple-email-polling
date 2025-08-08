@@ -36,8 +36,10 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${port}`,
-        description: 'Local development server',
+        url: process.env.NODE_ENV === 'production' 
+          ? process.env.BASE_URL || `https://your-domain.com`
+          : `http://localhost:${port}`,
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Local development server',
       },
     ],
   },
