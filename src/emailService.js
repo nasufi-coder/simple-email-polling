@@ -138,6 +138,7 @@ class SimpleEmailService {
         emailAccount: this.config.email,
         subject: parsed.subject || '',
         fromAddress: parsed.from?.value?.[0]?.address || '',
+        toAddress: parsed.to?.value?.[0]?.address || '',
         bodyText: parsed.text || '',
         date: parsed.date?.toISOString() || new Date().toISOString(),
         uid: uid

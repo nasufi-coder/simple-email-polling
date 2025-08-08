@@ -105,6 +105,33 @@ app.get('/api/last-code-from/:fromAddress', async (req, res) => {
   }
 });
 
+// Get last code for specific "to" address (for forwarded emails)
+app.get('/api/last-code-to/:toAddress', async (req, res) => {
+  try {
+    const toAddress = req.params.toAddress;
+    const code = await database.getLastCodeByToAddress(toAddress);
+    
+    if (!code) {
+      return res.json({
+        success: true,
+        data: null,
+        message: 'No codes found for this recipient address'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: code
+    });
+  } catch (error) {
+    console.error('Error getting last code for recipient:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get last code for recipient'
+    });
+  }
+});
+
 // Service status
 app.get('/api/status', (req, res) => {
   const status = emailService.getStatus();
@@ -126,6 +153,7 @@ app.get('/', (req, res) => {
       'GET /api/last-email - Get last email',
       'GET /api/last-code - Get last 2FA code',
       'GET /api/last-code-from/:fromAddress - Get last code from specific sender',
+      'GET /api/last-code-to/:toAddress - Get last code for specific recipient (forwarded emails)',
       'GET /api/status - Service status'
     ]
   });

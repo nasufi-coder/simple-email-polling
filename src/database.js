@@ -26,6 +26,7 @@ class SimpleDatabase {
         email_account TEXT NOT NULL,
         subject TEXT,
         from_address TEXT,
+        to_address TEXT,
         body_text TEXT,
         date TEXT,
         uid INTEGER,
@@ -47,6 +48,7 @@ class SimpleDatabase {
     
     // Add 'used' column to existing tables (migration)
     const addUsedColumn = `ALTER TABLE codes ADD COLUMN used BOOLEAN DEFAULT FALSE`;
+    const addToAddressColumn = `ALTER TABLE emails ADD COLUMN to_address TEXT`;
 
     this.db.exec(createEmailsTable);
     this.db.exec(createCodesTable);
@@ -55,13 +57,18 @@ class SimpleDatabase {
     this.db.run(addUsedColumn, (err) => {
       // Ignore error if column already exists
     });
+    
+    // Try to add to_address column (for existing databases)
+    this.db.run(addToAddressColumn, (err) => {
+      // Ignore error if column already exists
+    });
   }
 
   insertEmail(email) {
     return new Promise((resolve, reject) => {
-      const sql = `INSERT OR IGNORE INTO emails (id, email_account, subject, from_address, body_text, date, uid) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      const sql = `INSERT OR IGNORE INTO emails (id, email_account, subject, from_address, to_address, body_text, date, uid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
       
-      this.db.run(sql, [email.id, email.emailAccount, email.subject, email.fromAddress, email.bodyText, email.date, email.uid], function(err) {
+      this.db.run(sql, [email.id, email.emailAccount, email.subject, email.fromAddress, email.toAddress, email.bodyText, email.date, email.uid], function(err) {
         if (err) reject(err);
         else resolve(this.changes > 0);
       });
@@ -127,6 +134,31 @@ class SimpleDatabase {
       `;
       
       this.db.get(sql, [emailAccount, fromAddress], (err, row) => {
+        if (err) {
+          reject(err);
+        } else if (row) {
+          // Mark code as used
+          this.markCodeAsUsed(row.id);
+          resolve(row);
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  }
+
+  getLastCodeByToAddress(toAddress) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT c.*, e.subject, e.from_address, e.to_address 
+        FROM codes c 
+        JOIN emails e ON c.email_id = e.id 
+        WHERE e.to_address = ? AND c.used = FALSE
+        ORDER BY c.created_at DESC 
+        LIMIT 1
+      `;
+      
+      this.db.get(sql, [toAddress], (err, row) => {
         if (err) {
           reject(err);
         } else if (row) {
