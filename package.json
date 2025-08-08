@@ -7,15 +7,22 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
-  "keywords": ["email", "imap", "2fa", "simple"],
+  "keywords": [
+    "email",
+    "imap",
+    "2fa",
+    "simple"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "node-imap": "^0.9.6",
-    "mailparser": "^3.6.5",
-    "sqlite3": "^5.1.6",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mailparser": "^3.6.5",
+    "node-imap": "^0.9.6",
+    "sqlite3": "^5.1.6",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

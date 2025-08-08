@@ -13,6 +13,7 @@ A minimal email aggregation service with only essential endpoints.
 - **Sender filtering** - Get codes from specific email addresses
 - **Recipient filtering** - Get codes by "to" address (for forwarded emails)
 - **Database cleanup** - Automatically removes old emails (7+ days)
+- **Interactive API docs** - Swagger UI for easy testing and documentation
 - **5 simple endpoints** - No email parameter needed (uses configured account)
 
 ## Quick Start
@@ -32,6 +33,12 @@ A minimal email aggregation service with only essential endpoints.
    ```bash
    npm start
    ```
+
+## API Documentation
+
+**Interactive API Documentation (Swagger UI)**: `http://localhost:3001/api-docs`
+
+The Swagger UI provides an interactive interface to test all API endpoints directly from your browser.
 
 ## API Endpoints
 
