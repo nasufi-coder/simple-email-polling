@@ -144,6 +144,7 @@ class SimpleEmailService {
         fromAddress: parsed.from?.value?.[0]?.address || '',
         toAddress: toAddress,
         bodyText: bodyText,
+        bodyHtml: parsed.html || '',
         date: parsed.date?.toISOString() || new Date().toISOString(),
         uid: uid
       };
@@ -177,22 +178,47 @@ class SimpleEmailService {
     return '';
   }
 
+  htmlToText(html) {
+    return (html || '')
+      .replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&#?\w+;/g, ' ');
+  }
+
+  // Build text for code extraction, removing numbers that are never 2FA codes
+  // (URLs, emails, phone numbers, dates, copyright years)
+  buildExtractionText(email) {
+    const text = email.subject + ' ' + email.bodyText + ' ' + this.htmlToText(email.bodyHtml);
+    return text
+      .replace(/https?:\/\/\S+/gi, ' ')
+      .replace(/\S+@\S+/g, ' ')
+      .replace(/\d+(?:[.\-\/:]\d+)+/g, ' ')  // 1.877.864.5222, 2026-10-16, 10/16/2026, 5:28
+      .replace(/\(\d{3}\)\s*\d{3}[\s.\-]?\d{4}/g, ' ')
+      .replace(/\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b/gi, ' ')
+      .replace(/(?:©|copyright)\s*\d{4}/gi, ' ')
+      .replace(/\s+/g, ' ');
+  }
+
   extractCode(email, uid) {
-    const text = email.bodyText + ' ' + email.subject;
-    
-    // Simple patterns for 2FA codes
+    const text = this.buildExtractionText(email);
+
+    // Simple patterns for 2FA codes, most specific first
     const patterns = [
-      /code[:\s]*(\d{4,8})/gi,
-      /2fa[:\s]*(\d{4,8})/gi,
-      /verification[:\s]*(\d{4,8})/gi,
-      /\b(\d{6})\b/g,
-      /\b(\d{4})\b/g
+      /code[:\s]*(\d{4,8})\b/i,
+      /2fa[:\s]*(\d{4,8})\b/i,
+      /verification[:\s]*(\d{4,8})\b/i,
+      // Code shortly after the word "code", e.g. "use this code within ... : 296571"
+      /code\b[^]{0,200}?\b(\d{4,8})\b/i,
+      /\b(\d{6})\b/,
+      /\b(\d{4})\b/
     ];
 
     for (const pattern of patterns) {
-      const matches = text.match(pattern);
-      if (matches) {
-        const code = matches[0].replace(/\D/g, '');
+      const match = text.match(pattern);
+      if (match) {
+        const code = match[1];
         if (code.length >= 4 && code.length <= 8) {
           this.database.insertCode(email.id, code);
           console.log(`Code extracted: ${code}`);

@@ -23,6 +23,15 @@ const emailConfig = {
 // Initialize email service
 const emailService = new SimpleEmailService(emailConfig, database);
 
+// Allow the API to be called from any origin
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || '*');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(express.json());
 
 // Swagger configuration
