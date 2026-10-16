@@ -134,8 +134,11 @@ class SimpleEmailService {
       const parsed = await simpleParser(rawEmail);
       const bodyText = parsed.text || '';
       
-      // Extract "To" address from body text only (for forwarded emails)
-      const toAddress = this.extractToAddressFromBody(bodyText);
+      // Extract "To" address from body text (manually forwarded emails),
+      // falling back to the To header (auto-forwarded emails keep the original header)
+      const toAddress = this.extractToAddressFromBody(bodyText)
+        || parsed.to?.value?.[0]?.address
+        || '';
       
       const email = {
         id: uuidv4(),
